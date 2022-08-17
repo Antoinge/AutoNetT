@@ -1,3 +1,4 @@
+import ctypes
 import os
 from telnetlib import Telnet
 from openpyxl import Workbook
@@ -13,28 +14,21 @@ class AutoNetT:
         self.workbook = Workbook()
         self.path = os.mkdir("AutoNetT")
 
-    def is_Admin(self, user):
+    def is_admin(self):
+        # Returns whether or not we're admin
         try:
-            if Configuration.enable_session:
-                conn_logs = sqlite3.connect(self.database_path)
-                curs_logs = conn_logs.cursor()
-                curs_logs.execute("SELECT USER_ID FROM ADMINS WHERE USER_ID=? AND USER_ID", (user, user))
-                results = curs_logs.fetchone()
-                if results is not None:
-                    return True
-                return False
-            return True
-        except Exception as err:
-            print("Administrator rights required to run this software: " + str(err))
+            is_admin = os.getuid() == 0
+        except AttributeError:
+            is_admin = ctypes.windll.shell32.IsUserAnAdmin() != 0
+        return is_admin     
 
     def coordinator(self, host):
-        work_sheet = topology_Map
-        Telnet.open(host, port=23)
-        self.validate_IPv4(host())
-        if is_Admin(self.user):
-            return True
+        if self.is_admin() == True:
+            self.validate_IPv4(host())
+            self.work_sheet = self.topology_Map(self)
+            Telnet.open(host, port=23)
         else:
-            return False
+            return f"Admin rights rquired to run this programme"
 
     @staticmethod
     def validate_IPv4(ipv4addr):
@@ -60,15 +54,15 @@ class AutoNetT:
         work_sheet.cell(row=1, column=4, value="IP Address")
         work_sheet.cell(row=1, column=5, value="Active Protocols")
         self.workbook.save("AutoNetT_Top_Map_Output.xlsx")
-        return work_sheet
+        return Workbook
 
     def network_Search(self, file, workbook):
-        file.open("AutoNetT_Top_Map_Output.xlsx", "w")
+        file.load("AutoNetT_Top_Map_Output.xlsx", "w")
         sheet = workbook.active
         sheet['D1'] = self.host
-        if is_Admin():
+        if self.is_admin():
             try:
-                router = ConnectHandler(router_type='cisco_ios', ip=host, username=input(), password=input())
+                router = ConnectHandler(router_type='cisco_ios', ip=self.host, username=input(), password=input())
                 output = router.send_command("enable", "configure terminal", "cdp enable", "show run")
                 print(output)
             except Exception as err:

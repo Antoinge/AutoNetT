@@ -41,15 +41,20 @@ is below:
 
 3. The is_Admin function is used to check users have administrator privileges before running the AutoNetT software. This is a 
 security measure, as the potential for misuse with AutoNetT is high this will act as the first line of defence.
- def is_Admin(self, user):
-        if Configuration.enable_session:
-            conn_logs = sqlite3.connect(self.database_path)
-            curs_logs = conn_logs.cursor()
-            curs_logs.execute("SELECT USER_ID FROM ADMINS WHERE USER_ID=? AND USER_ID", (user, user))
-            results = curs_logs.fetchone()
-            if results is not None:
-                return True
-            return False
-        return True
+ def is_admin(self):
+        # Returns whether or not we're admin
+        try:
+            is_admin = os.getuid() == 0
+        except AttributeError:
+            is_admin = ctypes.windll.shell32.IsUserAnAdmin() != 0
+        return is_admin  
 
-4. 
+4. The aim of the coordinator function is to manage the flow of the program as it runs. At present this funcion is not complete, a decision must be made on how much should the funcion be aware of, for example does the coordinatr need to be aware of the IP validator?
+ef coordinator(self, host):
+        if self.is_admin() == True:
+            self.validate_IPv4(host())
+            self.work_sheet = self.topology_Map(self)
+            Telnet.open(host, port=23)
+        else:
+            return f"Admin rights rquired to run this programme"
+
